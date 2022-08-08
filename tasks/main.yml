@@ -1,0 +1,31 @@
+---
+- name: Checking variable "aws_access_key"
+  fail: msg="The variable \"aws_access_key\" is undefined"
+  when: aws_access_key is undefined
+
+- name: Checking variable "aws_secret_key"
+  fail: msg="The variable \"aws_secret_key\" is undefined"
+  when: aws_secret_key is undefined
+
+- name: Checking variable "aws_region"
+  fail: msg="The variable \"aws_region\" is undefined"
+  when: aws_region is undefined
+
+- name: Get AWS ECR login credentials
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_DEFAULT_REGION: "{{ aws_region }}"
+  command: aws ecr get-login-password
+  register: aws_ecr
+
+- name: set_fact
+  ansible.builtin.set_fact:
+    aws_ecr_token: "{{ aws_ecr.stdout }}"
+
+- name: Log into AWS ECR private registry
+  community.docker.docker_login:
+    registry_url: "{{ aws_ecr_registry }}"
+    username: AWS
+    password: "{{ aws_ecr_token }}"
+    reauthorize: yes
